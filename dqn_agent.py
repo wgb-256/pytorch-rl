@@ -19,8 +19,12 @@ class DQNAgent:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
         self.model = DQN(state_size, action_size).to(self.device)
+        self.target_model = DQN(state_size, action_size).to(self.device)
+        self.target_model.load_state_dict(self.model.state_dict())
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
         self.writer = SummaryWriter()
+        self.update_target_every = 10
+        self.steps = 0
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -42,7 +46,7 @@ class DQNAgent:
         dones = torch.FloatTensor(dones).to(self.device)
 
         q_values = self.model(states).gather(1, actions.unsqueeze(1))
-        next_q_values = self.model(next_states).max(1)[0]
+        next_q_values = self.target_model(next_states).max(1)[0].detach()
         target_q_values = rewards + (1 - dones) * self.gamma * next_q_values
 
         loss = nn.MSELoss()(q_values, target_q_values.unsqueeze(1))
@@ -51,4 +55,12 @@ class DQNAgent:
         self.optimizer.step()
 
         self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+
+        self.steps += 1
+        if self.steps % self.update_target_every == 0:
+            self.update_target_network()
+        
         return loss.item()
+    
+    def update_target_network(self):
+        self.target_model.load_state_dict(self.model.state_dict())
