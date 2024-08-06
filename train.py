@@ -2,12 +2,14 @@
 import gym
 import os
 from dqn_agent import DQNAgent
+from dt_agent import DTAgent
 from utils import create_gif
 
 def train(env_name, episodes, batch_size, gif_frequency=50):
     env = gym.make(env_name, render_mode="rgb_array")
-    agent = DQNAgent(env.observation_space.shape[0], env.action_space.n)
-
+    # agent = DQNAgent(env.observation_space.shape[0], env.action_space.n)
+    agent = DTAgent(env.observation_space.shape[0], env.action_space.n)
+    
     os.makedirs("./gifs", exist_ok=True)
 
     for episode in range(episodes):
